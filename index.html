@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>頂級專業運彩分析戰情室</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: #1e293b;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            color: #38bdf8;
+            margin-bottom: 5px;
+        }
+        .date {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        button {
+            width: 100%;
+            background: #f59e0b;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:hover {
+            background: #d97706;
+        }
+        .loading {
+            text-align: center;
+            margin-top: 20px;
+            color: #38bdf8;
+            display: none;
+        }
+        .result {
+            margin-top: 20px;
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            border: 1px solid #334155;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🔥 專業運彩即時戰情室</h1>
+        <div class="date" id="dateDisplay">載入即時聯網賽事中...</div>
+        
+        <button onclick="fetchAnalysis()">點擊獲取今日AI專業分析</button>
+
+        <div id="loading" class="loading">AI 正在透過即時網路搜尋最新賽事，請稍候約 5-10 秒...</div>
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+
+    <script>
+        async function fetchAnalysis() {
+            const btn = document.querySelector('button');
+            const loading = document.getElementById('loading');
+            const result = document.getElementById('result');
+            
+            btn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                const response = await fetch('/api/analyze');
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('dateDisplay').innerText = `分析日期：${data.date}`;
+                    result.innerText = data.analysis;
+                    result.style.display = 'block';
+                } else {
+                    result.innerText = '分析失敗: ' + (data.error || '未知錯誤');
+                    result.style.display = 'block';
+                }
+            } catch (err) {
+                result.innerText = '網路連線錯誤，請稍後再試。';
+                result.style.display = 'block';
+            } finally {
+                btn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
