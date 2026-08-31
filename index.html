@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 運彩戰情室 - 聯網自動同步版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen pb-12">
+
+    <!-- 頂端導航 -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
+        <div>
+            <h1 class="text-base font-bold text-amber-400">⚾ AI 運彩戰情室</h1>
+            <p class="text-[10px] text-slate-400">AI 聯網自動抓取市場最新資訊</p>
+        </div>
+        <div id="vipBadge" class="bg-slate-700 px-2.5 py-1 rounded-full text-[10px] text-slate-300">
+            一般訪客
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-4">
+
+        <!-- 載入狀態 -->
+        <div id="loadingBox" class="bg-slate-800 border border-slate-700 p-6 rounded-2xl text-center space-y-2 animate-pulse">
+            <div class="text-xl">🌐</div>
+            <h3 class="text-xs font-bold text-amber-400">AI 正在聯網搜尋今日最新市場數據...</h3>
+            <p class="text-[10px] text-slate-400">正在分析最新盤口、賠率與球員狀態，請稍候...</p>
+        </div>
+
+        <!-- 🌟 第一部分：公開免費金牌推薦 -->
+        <div id="freeSection" class="space-y-1"></div>
+
+        <!-- 🔒 第二部分：VIP 專屬解鎖區 -->
+        <div class="space-y-1 pt-2">
+            <div class="text-xs text-amber-400 font-medium flex items-center space-x-1">
+                <span>👑</span>
+                <span>VIP 專屬解鎖區 (市場即時多場 ＋ 黃金串關)</span>
+            </div>
+
+            <!-- 密碼輸入遮罩 -->
+            <div id="lockedView" class="bg-slate-800 border border-amber-500/40 rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+                <h3 class="text-sm font-bold text-amber-400">解鎖 AI 即時聯網的多場精選與串關</h3>
+                <div class="space-y-2 max-w-xs mx-auto">
+                    <input type="password" id="vipPwd" placeholder="請輸入 VIP 密碼 (預設: VIP999)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white text-center">
+                    <button onclick="unlock()" class="w-full bg-amber-600 hover:bg-amber-500 font-bold py-2.5 rounded-xl text-xs text-white">
+                        🔓 立即解鎖 VIP 權限
+                    </button>
+                </div>
+            </div>
+
+            <!-- 解鎖後的內容 -->
+            <div id="unlockedView" class="hidden space-y-3">
+                <div id="parlayContainer"></div>
+                <div id="matchesContainer" class="space-y-2"></div>
+                <button onclick="lock()" class="w-full bg-slate-800 border border-slate-700 text-slate-400 py-2 rounded-xl text-xs">
+                    🔒 登出 VIP 權限
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        let globalData = null;
+
+        window.onload = async function() {
+            try {
+                // 呼叫你的 Vercel 後端 API
+                const res = await fetch('/api/get-odds');
+                globalData = await res.json();
+                render(globalData);
+                document.getElementById('loadingBox').style.display = 'none';
+            } catch (err) {
+                document.getElementById('loadingBox').innerHTML = `<p class="text-xs text-red-400">連線雲端 AI 失敗，請確認 API 設定。</p>`;
+            }
+
+            if(localStorage.getItem('vip') === 'true') showVip();
+        }
+
+        function render(data) {
+            // 渲染免費金牌推薦
+            document.getElementById('freeSection').innerHTML = `
+                <div class="bg-slate-800 border border-emerald-500/50 rounded-2xl p-4 shadow-xl space-y-3 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-emerald-600 text-white text-[10px] px-3 py-1 rounded-bl-xl font-bold">
+                        AI 即時信心：${data.freePick.rate}
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h2 class="text-base font-bold text-white">${data.freePick.match}</h2>
+                            <span class="text-[10px] bg-slate-700 text-emerald-400 px-2 py-0.5 rounded">${data.freePick.league}</span>
+                        </div>
+                        <p class="text-xs text-emerald-400 font-medium mt-0.5">⚾ 推薦玩法：${data.freePick.pick}</p>
+                    </div>
+                    <div class="bg-slate-900 border border-emerald-500/30 rounded-xl p-3 flex justify-between items-center text-xs">
+                        <span class="text-slate-400">市場即時賠率：</span>
+                        <span class="text-amber-400 font-bold">${data.freePick.odds} 倍</span>
+                    </div>
+                    <div class="text-xs text-slate-300 bg-slate-700/30 p-2.5 rounded-lg border-l-2 border-emerald-500">
+                        <p class="font-semibold text-emerald-400">💡 聯網最新分析：</p>
+                        <p>${data.freePick.reason}</p>
+                    </div>
+                </div>
+            `;
+
+            // 渲染 VIP 串關
+            document.getElementById('parlayContainer').innerHTML = `
+                <div class="bg-gradient-to-br from-slate-800 to-slate-900 border-2 border-amber-500 rounded-2xl p-4 shadow-2xl space-y-3 relative overflow-hidden">
+                    <div class="absolute top-0 right-0 bg-amber-600 text-white text-[10px] px-3 py-1 rounded-bl-xl font-bold">
+                        AI 聯網串聯
+                    </div>
+                    <div>
+                        <h3 class="text-base font-bold text-white">${data.parlay.title}</h3>
+                        <p class="text-[10px] text-amber-400 font-medium">綜合勝率：${data.parlay.confidence} ｜ 預估總賠率：約 ${data.parlay.totalOdds} 倍</p>
+                    </div>
+                    <div class="bg-slate-900 border border-amber-500/30 rounded-xl p-2.5 text-[11px] text-slate-300 space-y-1">
+                        <p class="text-amber-400 font-semibold">📌 推薦組合：</p>
+                        ${data.parlay.items.map(item => `<p>${item}</p>`).join('')}
+                    </div>
+                </div>
+            `;
+
+            // 渲染 VIP 多場清單
+            let mHtml = `<div class="text-xs text-slate-400 font-medium mt-3">📋 聯網多場次即時拆解：</div>`;
+            data.matches.forEach(m => {
+                mHtml += `
+                    <div class="bg-slate-800 border border-slate-700 rounded-xl p-3 space-y-1.5">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="font-bold text-white">${m.match}</span>
+                            <span class="text-amber-400 font-bold">勝率 ${m.rate} ｜ ${m.pick}</span>
+                        </div>
+                        <p class="text-[11px] text-slate-300">${m.reason}</p>
+                    </div>
+                `;
+            });
+            document.getElementById('matchesContainer').innerHTML = mHtml;
+        }
+
+        function unlock() {
+            if(document.getElementById('vipPwd').value.trim() === 'VIP999') {
+                localStorage.setItem('vip', 'true');
+                showVip();
+                alert("🎉 VIP 解鎖成功！");
+            } else {
+                alert("❌ 密碼錯誤！");
+            }
+        }
+
+        function showVip() {
+            document.getElementById('lockedView').classList.add('hidden');
+            document.getElementById('unlockedView').classList.remove('hidden');
+            document.getElementById('vipBadge').innerText = "VIP 尊榮會員";
+            document.getElementById('vipBadge').className = "bg-amber-950 border border-amber-600 px-2.5 py-1 rounded-full text-[10px] text-amber-300 font-bold";
+        }
+
+        function lock() {
+            localStorage.removeItem('vip');
+            location.reload();
+        }
+    </script>
+</body>
+</html>
