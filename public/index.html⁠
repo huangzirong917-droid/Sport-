@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI 運彩戰情室 - 聯網實時版</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="AI 運彩戰情室">
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen pb-16">
+
+    <!-- 頂端導航 -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-50 px-4 py-3 flex justify-between items-center shadow-md">
+        <div>
+            <h1 class="text-base font-bold text-amber-400">⚾ AI 運彩戰情室</h1>
+            <p id="headerDate" class="text-[10px] text-slate-400">正在透過 AI 聯網抓取今日實時賽程...</p>
+        </div>
+        <div class="flex items-center space-x-2">
+            <button id="installBtn" class="hidden bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[10px] px-2.5 py-1 rounded-full font-bold">
+                📲 下載 App
+            </button>
+            <div id="vipBadge" class="bg-slate-700 px-2.5 py-1 rounded-full text-[10px] text-slate-300">
+                一般訪客
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto p-4 space-y-4">
+
+        <!-- 載入中動畫 -->
+        <div id="loadingBox" class="bg-slate-800 border border-slate-700 p-6 rounded-2xl text-center space-y-2 shadow-lg">
+            <div class="text-xl animate-spin">🌐</div>
+            <h3 class="text-xs font-bold text-amber-400">AI 正在聯網過濾休兵日、比對真實盤口...</h3>
+            <p class="text-[10px] text-slate-400">確保今日賽事百分之百正確中，請稍候...</p>
+        </div>
+
+        <!-- 🌟 公開免費區 (動態載入) -->
+        <div id="freeSection" class="space-y-1"></div>
+
+        <!-- 🔒 VIP 專屬解鎖區 -->
+        <div class="space-y-1 pt-2">
+            <div class="text-xs text-amber-400 font-medium flex items-center space-x-1">
+                <span>👑 VIP 專屬解鎖區 (聯網多場精選 ＋ 核心黃金串關)</span>
+            </div>
+            
+            <div id="vipLockedView" class="bg-slate-800/80 border border-amber-500/30 rounded-2xl p-5 text-center space-y-3 shadow-lg">
+                <div class="text-sm font-semibold text-slate-200">解鎖 AI 聯網當日多場真實賽事與核心串關</div>
+                <div class="relative">
+                    <input type="password" id="vipPasswordInput" placeholder="請輸入授權密碼 (預設: 1688)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-xs text-center text-slate-100 placeholder-slate-500 focus:outline-none focus:border-amber-500 transition-colors">
+                </div>
+                <button onclick="verifyVip()" class="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold text-xs py-2.5 rounded-xl shadow transition-all active:scale-[0.98]">
+                    🔒 立即解鎖 VIP 授權
+                </button>
+            </div>
+
+            <div id="vipUnlockedView" class="hidden space-y-3"></div>
+        </div>
+    </main>
+
+    <script>
+        let liveAnalysisText = "";
+
+        async function fetchLiveData() {
+            try {
+                const res = await fetch('/api/analyze');
+                const result = await res.json();
+                
+                if (result.success) {
+                    document.getElementById('headerDate').textContent = `今日日期：${result.date} 實時聯網`;
+                    document.getElementById('loadingBox').classList.add('hidden');
+                    liveAnalysisText = result.analysis;
+
+                    // 渲染免費區與 VIP 預覽
+                    document.getElementById('freeSection').innerHTML = `
+                        <div class="bg-slate-800 border border-slate-700 p-4 rounded-2xl space-y-2 shadow-lg">
+                            <div class="flex justify-between items-center">
+                                <h3 class="text-xs font-bold text-amber-400">🔥 今日公開金牌推薦 (AI 實時聯網)</h3>
+                                <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-[10px] px-2 py-0.5 rounded-full font-medium">聯網準確</span>
+                            </div>
+                            <div class="text-xs text-slate-300 leading-relaxed whitespace-pre-line border-t border-slate-700/60 pt-2">${liveAnalysisText}</div>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                document.getElementById('loadingBox').innerHTML = `<p class="text-xs text-red-400">聯網載入失敗，請確認後端 API 設定。</p>`;
+            }
+        }
+
+        window.verifyVip = function() {
+            const input = document.getElementById('vipPasswordInput').value.trim();
+            if (input === '1688' || input === '888') {
+                localStorage.setItem('vip', 'true');
+                document.getElementById('vipLockedView').classList.add('hidden');
+                document.getElementById('vipBadge'].textContent = 'VIP 授權會員';
+                document.getElementById('vipBadge').className = 'bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full text-[10px] font-bold';
+                
+                const unlocked = document.getElementById('vipUnlockedView');
+                unlocked.classList.remove('hidden');
+                unlocked.innerHTML = `
+                    <div class="bg-slate-800 border border-amber-500/40 p-4 rounded-2xl space-y-3 shadow-lg">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xs font-bold text-amber-400">👑 VIP 完整聯網賽事與黃金串關</h3>
+                            <span class="bg-amber-500/20 text-amber-400 border border-amber-500/30 text-[10px] px-2 py-0.5 rounded-full font-bold">授權解鎖</span>
+                        </div>
+                        <div class="text-xs text-slate-300 space-y-2 border-t border-slate-700/60 pt-2 whitespace-pre-line">
+                            ${liveAnalysisText}
+                        </div>
+                    </div>
+                `;
+            } else {
+                alert('密碼錯誤！請輸入正確的 VIP 密碼 (1688)');
+            }
+        };
+
+        window.onload = function() {
+            if (localStorage.getItem('vip') === 'true') {
+                document.getElementById('vipPasswordInput').value = '1688';
+                window.verifyVip();
+            }
+            fetchLiveData();
+        };
+    </script>
+</body>
+</html>
